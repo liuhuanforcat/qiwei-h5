@@ -5,6 +5,11 @@ import pxtorem from 'postcss-pxtorem'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    host: '0.0.0.0', // 监听所有地址，包括局域网地址
+    port: 5173, // 可以指定端口，默认是 5173
+    open: true, // 自动打开浏览器（可选）
+  },
   css: {
     postcss: {
       plugins: [
