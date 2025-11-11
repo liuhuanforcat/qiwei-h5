@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import {
   TabBar,
   Popup,
@@ -15,104 +15,232 @@ import {
   MessageOutline,
   UserOutline,
   AddOutline,
+  FilterOutline,
   CalendarOutline,
 } from 'antd-mobile-icons';
+import {
+  TaskCard,
+  TaskCategoryTabs,
+  TaskFilterSheet,
+  type Task,
+  type TaskCategoryKey,
+  type TaskCategoryTab,
+  type TaskPriorityKey,
+  type TaskFilterOption,
+  TASK_CATEGORY_LABELS,
+} from '../components/task';
 import './index.less';
 
 type TabItem = {
   key: string;
   title: string;
   icon: ReactNode;
-  badge?: ReactNode;
-  description: string;
 };
 
-const tabItems: TabItem[] = [
+const bottomTabs: TabItem[] = [
+  { key: 'home', title: '首页', icon: <AppOutline /> },
+  { key: 'task', title: '我的待办', icon: <UnorderedListOutline /> },
+  { key: 'message', title: '我的消息', icon: <MessageOutline /> },
+  { key: 'profile', title: '个人中心', icon: <UserOutline /> },
+];
+
+const CATEGORY_DEFINITIONS: Array<Pick<TaskCategoryTab, 'key' | 'label'>> = [
+  { key: 'all', label: '全部' },
+  { key: 'work', label: '工作' },
+  { key: 'study', label: '学习' },
+  { key: 'life', label: '生活' },
+];
+
+const PRIORITY_OPTIONS: TaskFilterOption[] = [
+  { value: 'all', label: '全部' },
+  { value: 'high', label: '高优先级' },
+  { value: 'medium', label: '中优先级' },
+  { value: 'low', label: '低优先级' },
+];
+
+const INITIAL_TASKS: Task[] = [
   {
-    key: 'home',
-    title: '首页',
-    icon: <AppOutline />,
-    description: '这里是首页，可以放置概览、数据看板等核心内容。',
+    id: 'task-1',
+    title: '完成H5项目设计',
+    description: '设计移动端项目前端UI和核心功能',
+    category: 'work',
+    priority: 'high',
+    dueDate: '2025-11-11',
+    completed: false,
   },
   {
-    key: 'task',
-    title: '我的待办',
-    icon: <UnorderedListOutline />,
-    description: '待办事项列表，展示需要处理的任务。',
-  },
-  {
-    key: 'message',
-    title: '我的消息',
-    icon: <MessageOutline />,
-    description: '消息通知区域，用于及时查看系统提醒与互动信息。',
-  },
-  {
-    key: 'profile',
-    title: '个人中心',
-    icon: <UserOutline />,
-    description: '个人资料、账户设置等内容可以放在这里。',
+    id: 'task-2',
+    title: '11111',
+    description: '222222',
+    category: 'study',
+    priority: 'medium',
+    dueDate: '2025-11-15',
+    completed: false,
   },
 ];
 
+const formatPickerDisplay = (value?: Date | null) => {
+  if (!value) return '年/月/日';
+  const year = value.getFullYear();
+  const month = `${value.getMonth() + 1}`.padStart(2, '0');
+  const day = `${value.getDate()}`.padStart(2, '0');
+  return `${year}/${month}/${day}`;
+};
+
+const formatDateForStorage = (value?: Date | null) => {
+  if (!value) return undefined;
+  const year = value.getFullYear();
+  const month = `${value.getMonth() + 1}`.padStart(2, '0');
+  const day = `${value.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const Home = () => {
-  const [activeKey, setActiveKey] = useState('home');
+  const [activeTabKey, setActiveTabKey] = useState('home');
   const [showTaskPopup, setShowTaskPopup] = useState(false);
   const [form] = Form.useForm();
   const [deadlinePickerVisible, setDeadlinePickerVisible] = useState(false);
-  const activeTab = tabItems.find((item) => item.key === activeKey);
+  const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
+  const [filterVisible, setFilterVisible] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<TaskCategoryKey>('all');
+  const [selectedPriority, setSelectedPriority] = useState<TaskPriorityKey>('all');
 
-  const formatDate = (value?: Date | null) => {
-    if (!value) return '年/月/日';
-    const year = value.getFullYear();
-    const month = `${value.getMonth() + 1}`.padStart(2, '0');
-    const day = `${value.getDate()}`.padStart(2, '0');
-    return `${year}/${month}/${day}`;
+  const today = useMemo(() => {
+    const date = new Date();
+    const weekMap = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+    const week = weekMap[date.getDay()];
+    const month = `${date.getMonth() + 1}`.toString().padStart(2, '0');
+    const day = `${date.getDate()}`.toString().padStart(2, '0');
+    return `${month}月${day}日 ${week}`;
+  }, []);
+
+  const categoryTabs = useMemo<TaskCategoryTab[]>(() => {
+    return CATEGORY_DEFINITIONS.map((item) => ({
+      ...item,
+      count:
+        item.key === 'all'
+          ? tasks.length
+          : tasks.filter((task) => task.category === item.key).length,
+    }));
+  }, [tasks]);
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((task) => {
+      const matchCategory = selectedCategory === 'all' || task.category === selectedCategory;
+      const matchPriority = selectedPriority === 'all' || task.priority === selectedPriority;
+      return matchCategory && matchPriority;
+    });
+  }, [tasks, selectedCategory, selectedPriority]);
+
+  const handleToggleTask = (taskId: string) => {
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === taskId ? { ...task, completed: !task.completed } : task,
+      ),
+    );
   };
 
-  // 处理表单提交
+  const handleDeleteTask = (taskId: string) => {
+    setTasks((prev) => prev.filter((task) => task.id !== taskId));
+  };
+
   const handleSubmit = () => {
     const values = form.getFieldsValue();
-    const normalizedValues = {
-      ...values,
-      priority: values.priority?.[0] ?? '',
-      category: values.category?.[0] ?? '',
+    const newTask: Task = {
+      id: `task-${Date.now()}`,
+      title: values.title,
+      description: values.description ?? '',
+      category: (values.category?.[0] ?? 'work') as Task['category'],
+      priority: (values.priority?.[0] ?? 'medium') as Task['priority'],
+      dueDate: formatDateForStorage(values.deadline ?? null),
+      completed: false,
     };
 
-    console.log('新建任务:', normalizedValues);
-    // 这里可以添加保存到 IndexedDB 的逻辑
+    setTasks((prev) => [newTask, ...prev]);
     setShowTaskPopup(false);
     form.resetFields();
   };
 
-  // 取消新建
   const handleCancel = () => {
     setShowTaskPopup(false);
     form.resetFields();
   };
 
+  const unfinishedCount = useMemo(
+    () => tasks.filter((task) => !task.completed).length,
+    [tasks],
+  );
+
   return (
     <div className="home-page">
       <div className="home-header">
-        <h1>Tabs</h1>
-      </div>
-      <div className="home-content">
-        <h2>{activeTab?.title}</h2>
-        <p>{activeTab?.description}</p>
+        <div className="home-header__info">
+          <div className="home-header__title">今日待办</div>
+          <div className="home-header__subtitle">
+            {today} · 还有 {unfinishedCount} 个任务待完成
+          </div>
+        </div>
+        <button
+          type="button"
+          className="home-header__filter"
+          onClick={() => setFilterVisible(true)}
+        >
+          <FilterOutline fontSize={20} />
+        </button>
       </div>
 
-      {/* 悬浮新建按钮 */}
+      <div className="home-body">
+        <TaskCategoryTabs
+          categories={categoryTabs}
+          activeKey={selectedCategory}
+          onChange={setSelectedCategory}
+        />
+
+        <div className="task-list">
+          {filteredTasks.length === 0 ? (
+            <div className="task-empty">
+              <div className="task-empty__title">暂无任务</div>
+              <div className="task-empty__desc">点击右下角 + 开始创建第一个任务吧</div>
+            </div>
+          ) : (
+            filteredTasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                onToggleComplete={handleToggleTask}
+                onDelete={handleDeleteTask}
+              />
+            ))
+          )}
+        </div>
+      </div>
+
+      <TaskFilterSheet
+        visible={filterVisible}
+        onClose={() => setFilterVisible(false)}
+        categoryOptions={categoryTabs}
+        selectedCategory={selectedCategory}
+        onCategorySelect={setSelectedCategory}
+        priorityOptions={PRIORITY_OPTIONS}
+        selectedPriority={selectedPriority}
+        onPrioritySelect={setSelectedPriority}
+        onReset={() => {
+          setSelectedCategory('all');
+          setSelectedPriority('all');
+        }}
+      />
+
       <div className="fab-button" onClick={() => setShowTaskPopup(true)}>
         <AddOutline fontSize={28} />
       </div>
 
-      {/* 新建任务弹窗 */}
       <Popup
         visible={showTaskPopup}
         onMaskClick={() => setShowTaskPopup(false)}
         position="bottom"
         bodyStyle={{
-          borderTopLeftRadius: '8px',
-          borderTopRightRadius: '8px',
+          borderTopLeftRadius: '16px',
+          borderTopRightRadius: '16px',
           minHeight: '60vh',
         }}
       >
@@ -129,8 +257,8 @@ const Home = () => {
             layout="vertical"
             className="task-form"
             initialValues={{
-              priority: ['中'],
-              category: ['工作'],
+              priority: ['medium'],
+              category: ['work'],
               deadline: null,
             }}
           >
@@ -154,9 +282,9 @@ const Home = () => {
             <Form.Item name="priority" label="优先级" className="selector-field">
               <Selector
                 options={[
-                  { label: '高', value: '高' },
-                  { label: '中', value: '中' },
-                  { label: '低', value: '低' },
+                  { label: '高优先级', value: 'high' },
+                  { label: '中优先级', value: 'medium' },
+                  { label: '低优先级', value: 'low' },
                 ]}
                 multiple={false}
                 columns={3}
@@ -165,11 +293,10 @@ const Home = () => {
 
             <Form.Item name="category" label="分类" className="selector-field">
               <Selector
-                options={[
-                  { label: '工作', value: '工作' },
-                  { label: '学习', value: '学习' },
-                  { label: '生活', value: '生活' },
-                ]}
+                options={Object.entries(TASK_CATEGORY_LABELS).map(([value, label]) => ({
+                  label,
+                  value,
+                }))}
                 multiple={false}
                 columns={3}
               />
@@ -186,7 +313,7 @@ const Home = () => {
                       onClick={() => setDeadlinePickerVisible(true)}
                     >
                       <span className={`date-text${isPlaceholder ? ' placeholder' : ''}`}>
-                        {formatDate(value)}
+                        {formatPickerDisplay(value)}
                       </span>
                       <CalendarOutline className="date-icon" />
                     </div>
@@ -231,18 +358,13 @@ const Home = () => {
       </Popup>
 
       <TabBar
-        activeKey={activeKey}
-        onChange={setActiveKey}
+        activeKey={activeTabKey}
+        onChange={setActiveTabKey}
         className="home-tab-bar"
         safeArea
       >
-        {tabItems.map((item) => (
-          <TabBar.Item
-            key={item.key}
-            title={item.title}
-            icon={item.icon}
-            badge={item.badge}
-          />
+        {bottomTabs.map((item) => (
+          <TabBar.Item key={item.key} title={item.title} icon={item.icon} />
         ))}
       </TabBar>
     </div>

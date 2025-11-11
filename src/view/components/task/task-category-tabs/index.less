@@ -1,0 +1,52 @@
+.task-category-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0 4px;
+
+  &__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    row-gap: 4px;
+    height: 60px;
+    border: none;
+    border-radius: 16px;
+    background: #ffffff;
+    font-size: 13px;
+    color: #8f959e;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: inset 0 0 0 1px rgba(22, 119, 255, 0.08);
+
+    &:active {
+      transform: translateY(1px);
+    }
+
+    &.active {
+      background: linear-gradient(135deg, #4da3ff 0%, #82b5ff 100%);
+      color: #ffffff;
+      box-shadow: 0 10px 24px rgba(77, 163, 255, 0.28);
+    }
+  }
+
+  &__label {
+    font-size: 13px;
+  }
+
+  &__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+    color: inherit;
+    font-size: 12px;
+    font-weight: 600;
+  }
+}
+

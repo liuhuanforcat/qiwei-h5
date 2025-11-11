@@ -1,0 +1,51 @@
+.task-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  background: rgba(0, 0, 0, 0.05);
+  color: #4d4f55;
+  column-gap: 4px;
+  transition: all 0.2s ease;
+
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  &__text {
+    white-space: nowrap;
+  }
+
+  &.priority-high {
+    background: rgba(255, 77, 79, 0.12);
+    color: #ff4d4f;
+  }
+
+  &.priority-medium {
+    background: rgba(250, 173, 20, 0.18);
+    color: #fa8c16;
+  }
+
+  &.priority-low {
+    background: rgba(82, 196, 26, 0.14);
+    color: #52c41a;
+  }
+
+  &.category {
+    background: rgba(24, 144, 255, 0.12);
+    color: #1677ff;
+  }
+
+  &.deadline {
+    background: rgba(245, 34, 45, 0.12);
+    color: #f5222d;
+  }
+}
+
