@@ -22,6 +22,7 @@ import {
   TaskCard,
   TaskCategoryTabs,
   TaskFilterSheet,
+  TaskListGrouped,
   type Task,
   type TaskCategoryKey,
   type TaskCategoryTab,
@@ -95,6 +96,15 @@ const formatDateForStorage = (value?: Date | null) => {
   return `${year}-${month}-${day}`;
 };
 
+// 获取今日日期字符串 (YYYY-MM-DD)
+const getTodayDateString = () => {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const Home = () => {
   const [activeTabKey, setActiveTabKey] = useState('home');
   const [showTaskPopup, setShowTaskPopup] = useState(false);
@@ -114,23 +124,39 @@ const Home = () => {
     return `${month}月${day}日 ${week}`;
   }, []);
 
-  const categoryTabs = useMemo<TaskCategoryTab[]>(() => {
-    return CATEGORY_DEFINITIONS.map((item) => ({
-      ...item,
-      count:
-        item.key === 'all'
-          ? tasks.length
-          : tasks.filter((task) => task.category === item.key).length,
-    }));
+  // 获取今日待办任务
+  const todayTasks = useMemo(() => {
+    const today = getTodayDateString();
+    return tasks.filter((task) => task.dueDate === today);
   }, [tasks]);
 
-  const filteredTasks = useMemo(() => {
-    return tasks.filter((task) => {
+  // 首页的过滤任务（只显示今日待办）
+  const homeFilteredTasks = useMemo(() => {
+    return todayTasks.filter((task) => {
       const matchCategory = selectedCategory === 'all' || task.category === selectedCategory;
       const matchPriority = selectedPriority === 'all' || task.priority === selectedPriority;
       return matchCategory && matchPriority;
     });
-  }, [tasks, selectedCategory, selectedPriority]);
+  }, [todayTasks, selectedCategory, selectedPriority]);
+
+  // 我的待办的所有任务（只按优先级筛选，分类筛选由组件内部处理）
+  const allTasksFiltered = useMemo(() => {
+    return tasks.filter((task) => {
+      const matchPriority = selectedPriority === 'all' || task.priority === selectedPriority;
+      return matchPriority;
+    });
+  }, [tasks, selectedPriority]);
+
+  const categoryTabs = useMemo<TaskCategoryTab[]>(() => {
+    const taskList = activeTabKey === 'home' ? todayTasks : tasks;
+    return CATEGORY_DEFINITIONS.map((item) => ({
+      ...item,
+      count:
+        item.key === 'all'
+          ? taskList.length
+          : taskList.filter((task) => task.category === item.key).length,
+    }));
+  }, [tasks, todayTasks, activeTabKey]);
 
   const handleToggleTask = (taskId: string) => {
     setTasks((prev) =>
@@ -166,54 +192,108 @@ const Home = () => {
     form.resetFields();
   };
 
-  const unfinishedCount = useMemo(
-    () => tasks.filter((task) => !task.completed).length,
-    [tasks],
-  );
+  const unfinishedCount = useMemo(() => {
+    if (activeTabKey === 'home') {
+      return todayTasks.filter((task) => !task.completed).length;
+    }
+    return tasks.filter((task) => !task.completed).length;
+  }, [tasks, todayTasks, activeTabKey]);
+
+  // 根据当前 tab 渲染内容
+  const renderContent = () => {
+    if (activeTabKey === 'home') {
+      // 首页：显示今日待办
+      return (
+        <div className="home-body">
+          <TaskCategoryTabs
+            categories={categoryTabs}
+            activeKey={selectedCategory}
+            onChange={setSelectedCategory}
+          />
+
+          <div className="task-list">
+            {homeFilteredTasks.length === 0 ? (
+              <div className="task-empty">
+                <div className="task-empty__title">暂无任务</div>
+                <div className="task-empty__desc">点击右下角 + 开始创建第一个任务吧</div>
+              </div>
+            ) : (
+              homeFilteredTasks.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  onToggleComplete={handleToggleTask}
+                  onDelete={handleDeleteTask}
+                />
+              ))
+            )}
+          </div>
+        </div>
+      );
+    } else if (activeTabKey === 'task') {
+      // 我的待办：按日期分组显示所有任务
+      return (
+        <div className="home-body">
+          <TaskListGrouped
+            tasks={allTasksFiltered}
+            categoryTabs={categoryTabs}
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+            onToggleComplete={handleToggleTask}
+            onDelete={handleDeleteTask}
+          />
+        </div>
+      );
+    } else {
+      // 其他 tab（消息、个人中心）显示占位符
+      return (
+        <div className="home-body home-body--placeholder">
+          <div className="tab-placeholder">
+            <div className="tab-placeholder__icon">
+              {activeTabKey === 'message' ? <MessageOutline /> : <UserOutline />}
+            </div>
+            <div className="tab-placeholder__title">
+              {activeTabKey === 'message' ? '我的消息' : '个人中心'}
+            </div>
+            <div className="tab-placeholder__desc">功能开发中...</div>
+          </div>
+        </div>
+      );
+    }
+  };
 
   return (
     <div className="home-page">
       <div className="home-header">
         <div className="home-header__info">
-          <div className="home-header__title">今日待办</div>
+          <div className="home-header__title">
+            {activeTabKey === 'home' ? '今日待办' : activeTabKey === 'task' ? '我的待办' : '首页'}
+          </div>
           <div className="home-header__subtitle">
-            {today} · 还有 {unfinishedCount} 个任务待完成
+            {activeTabKey === 'home' && (
+              <>
+                {today} · 还有 {unfinishedCount} 个任务待完成
+              </>
+            )}
+            {activeTabKey === 'task' && (
+              <>
+                共 {tasks.length} 个任务 · 还有 {unfinishedCount} 个待完成
+              </>
+            )}
           </div>
         </div>
-        <button
-          type="button"
-          className="home-header__filter"
-          onClick={() => setFilterVisible(true)}
-        >
-          <FilterOutline fontSize={20} />
-        </button>
+        {(activeTabKey === 'home' || activeTabKey === 'task') && (
+          <button
+            type="button"
+            className="home-header__filter"
+            onClick={() => setFilterVisible(true)}
+          >
+            <FilterOutline fontSize={20} />
+          </button>
+        )}
       </div>
 
-      <div className="home-body">
-        <TaskCategoryTabs
-          categories={categoryTabs}
-          activeKey={selectedCategory}
-          onChange={setSelectedCategory}
-        />
-
-        <div className="task-list">
-          {filteredTasks.length === 0 ? (
-            <div className="task-empty">
-              <div className="task-empty__title">暂无任务</div>
-              <div className="task-empty__desc">点击右下角 + 开始创建第一个任务吧</div>
-            </div>
-          ) : (
-            filteredTasks.map((task) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                onToggleComplete={handleToggleTask}
-                onDelete={handleDeleteTask}
-              />
-            ))
-          )}
-        </div>
-      </div>
+      {renderContent()}
 
       <TaskFilterSheet
         visible={filterVisible}
