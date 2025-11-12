@@ -23,6 +23,7 @@ import {
   TaskCategoryTabs,
   TaskFilterSheet,
   TaskListGrouped,
+  TaskOverdueList,
   type Task,
   type TaskCategoryKey,
   type TaskCategoryTab,
@@ -266,6 +267,14 @@ const Home = () => {
     return tasks.filter((task) => !task.completed).length;
   }, [tasks, todayTasks, activeTabKey]);
 
+  const overdueTasks = useMemo(() => {
+    const todayStr = getTodayDateString();
+    return tasks.filter((task) => {
+      if (!task.dueDate) return false;
+      return task.dueDate < todayStr && !task.completed;
+    });
+  }, [tasks]);
+
   // 根据当前 tab 渲染内容
   const renderContent = () => {
     if (activeTabKey === 'home') {
@@ -311,6 +320,13 @@ const Home = () => {
           />
         </div>
       );
+    } else if (activeTabKey === 'message') {
+      // 我的消息：展示逾期任务
+      return (
+        <div className="home-body home-body--message">
+          <TaskOverdueList tasks={tasks} onGoHandle={() => setActiveTabKey('task')} />
+        </div>
+      );
     } else {
       // 其他 tab（消息、个人中心）显示占位符
       return (
@@ -346,6 +362,9 @@ const Home = () => {
               <>
                 共 {tasks.length} 个任务 · 还有 {unfinishedCount} 个待完成
               </>
+            )}
+            {activeTabKey === 'message' && (
+              <>已逾期 {overdueTasks.length} 个任务待处理</>
             )}
           </div>
         </div>

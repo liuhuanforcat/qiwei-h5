@@ -1,73 +1,54 @@
-# React + TypeScript + Vite
+# 企微 H5 待办管理系统
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+基于 React + TypeScript + Vite 构建的移动端待办管理应用。项目聚焦于「首页今日待办」「我的待办」「我的消息」三个核心场景，提供灵活的任务分类、优先级筛选与逾期提醒能力，适合企业内部的轻量级任务协同与个人时间管理。
 
-Currently, two official plugins are available:
+## 功能概览
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **首页今日待办**：自动筛选当天到期的任务，显示剩余未完成数量，并支持快速完成/删除。
+- **我的待办**：以日期为单位分组展示全部任务，支持按照分类与优先级筛选，便于规划每日日程。
+- **我的消息**：自动汇总逾期未处理的任务，提供跳转入口引导用户回到待办列表处理。
+- **任务管理**：支持新增任务、设置优先级/分类/截止时间、查看任务详情、删除与完成操作。
+- **过滤器**：提供底部抽屉式筛选，快速切换任务视图，帮助聚焦关键事项。
 
-## React Compiler
+## 技术栈
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **框架**：React 18、TypeScript 5
+- **构建工具**：Vite 5
+- **UI 组件**：Ant Design Mobile
+- **样式**：Less + CSS Modules 风格命名
 
-## Expanding the ESLint configuration
+## 开发与调试
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+```bash
+# 安装依赖
+pnpm install
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+# 本地开发
+pnpm dev
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+# 生产构建
+pnpm build
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# 预览产物
+pnpm preview
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 目录结构
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```text
+src/
+├─ view/
+│  ├─ home/              # 首页与 Tab 总体页
+│  └─ components/task/   # 任务相关通用组件
+├─ App.tsx
+├─ main.tsx
+└─ index.css
 ```
+
+## 后续规划
+
+- 接入真实后端接口，实现任务的持久化存储与多端同步
+- 扩展提醒能力，如即将到期通知、关键词搜索
+- 打通「我的消息」与推送体系，实现更全面的逾期提醒
+
+欢迎提交 Issue 与 PR，一起完善这个待办管理应用。
