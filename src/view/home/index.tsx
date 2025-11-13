@@ -105,14 +105,17 @@ const HomePage = () => {
     return todayTasks.filter((task) => !task.completed).length;
   }, [todayTasks]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const values = form.getFieldsValue();
-    addTask({
+    
+    // 调用 addTask，即使 IndexedDB 未就绪，任务也会添加到本地状态
+    await addTask({
       title: values.title,
       description: values.description ?? '',
       category: (values.category?.[0] ?? 'work') as any,
       priority: (values.priority?.[0] ?? 'medium') as any,
       dueDate: formatDateForStorage(values.deadline ?? null),
+      completed: false, // 确保默认为未完成
     });
 
     setShowTaskPopup(false);

@@ -126,9 +126,19 @@ export function useIndexedDB<TValue>(
       onUpgrade?.(db, event, store);
     };
 
+    const closeRequestResult = () => {
+      if (openRequest.readyState === 'done') {
+        try {
+          openRequest.result.close();
+        } catch (closeError) {
+          console.warn('关闭 IndexedDB 请求结果失败:', closeError);
+        }
+      }
+    };
+
     openRequest.onsuccess = () => {
       if (cancelled) {
-        openRequest.result.close();
+        closeRequestResult();
         return;
       }
       dbRef.current = openRequest.result;
@@ -137,7 +147,7 @@ export function useIndexedDB<TValue>(
 
     openRequest.onerror = () => {
       if (cancelled) {
-        openRequest.result.close();
+        closeRequestResult();
         return;
       }
       setError(openRequest.error ?? new Error('IndexedDB 打开失败'));
@@ -154,9 +164,9 @@ export function useIndexedDB<TValue>(
         dbRef.current.close();
         dbRef.current = null;
       }
-      openRequest.result?.close?.();
+      closeRequestResult();
     };
-  }, [dbName, storeName, version, storeConfig, onUpgrade]);
+  }, [dbName, storeName, version]); // 移除 storeConfig 和 onUpgrade，它们每次都是新对象导致重复初始化
 
   /**
    * 统一封装事务执行流程，确保所有操作都在同一入口
