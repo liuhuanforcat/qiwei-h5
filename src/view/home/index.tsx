@@ -193,7 +193,15 @@ const HomePage = () => {
         }}
       />
 
-      <div className="fab-button" onClick={() => setShowTaskPopup(true)}>
+      <div 
+        className="fab-button" 
+        onClick={() => {
+          // 打开弹窗时，重置表单并设置默认日期为今天
+          form.resetFields();
+          form.setFieldValue('deadline', new Date());
+          setShowTaskPopup(true);
+        }}
+      >
         <AddOutline fontSize={28} />
       </div>
 
