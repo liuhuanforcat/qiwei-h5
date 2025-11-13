@@ -1,0 +1,38 @@
+.message-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #f5f5f5;
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  &__info {
+    flex: 1;
+  }
+
+  &__title {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  &__subtitle {
+    font-size: 13px;
+    opacity: 0.9;
+  }
+}
+
+.message-body {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 80px;
+}
+

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { TaskCard, TaskCategoryTabs, type Task, type TaskCategoryKey, type TaskCategoryTab } from '../';
+import { TaskCard, TaskCategoryTabs, type Task, type TaskCategoryKey, type TaskCategoryTab } from '@/components/task';
 import './index.less';
 
 type TaskListGroupedProps = {

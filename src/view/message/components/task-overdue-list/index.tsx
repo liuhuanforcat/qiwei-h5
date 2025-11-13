@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import type { Task } from '..';
-import { TASK_CATEGORY_LABELS } from '..';
+import type { Task } from '@/components/task';
+import { TASK_CATEGORY_LABELS } from '@/components/task';
 import './index.less';
 
 type TaskOverdueListProps = {
@@ -62,3 +62,4 @@ const TaskOverdueList = ({ tasks, onGoHandle }: TaskOverdueListProps) => {
 };
 
 export default TaskOverdueList;
+
