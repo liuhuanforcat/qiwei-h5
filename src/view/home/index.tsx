@@ -108,13 +108,18 @@ const HomePage = () => {
   const handleSubmit = async () => {
     const values = form.getFieldsValue();
     
+    // 如果用户没有选择日期，默认使用今天的日期
+    const dueDate = values.deadline 
+      ? formatDateForStorage(values.deadline) 
+      : getTodayDateString(); // 默认今天
+    
     // 调用 addTask，即使 IndexedDB 未就绪，任务也会添加到本地状态
     await addTask({
       title: values.title,
       description: values.description ?? '',
       category: (values.category?.[0] ?? 'work') as any,
       priority: (values.priority?.[0] ?? 'medium') as any,
-      dueDate: formatDateForStorage(values.deadline ?? null),
+      dueDate: dueDate, // 确保总是有日期
       completed: false, // 确保默认为未完成
     });
 
@@ -125,6 +130,8 @@ const HomePage = () => {
   const handleCancel = () => {
     setShowTaskPopup(false);
     form.resetFields();
+    // 清除日期字段（重置时不保留日期）
+    form.setFieldValue('deadline', undefined);
   };
 
   return (
@@ -215,7 +222,7 @@ const HomePage = () => {
             initialValues={{
               priority: ['medium'],
               category: ['work'],
-              deadline: null,
+              deadline: new Date(), // 默认今天
             }}
           >
             <Form.Item

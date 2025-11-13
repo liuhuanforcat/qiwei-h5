@@ -11,7 +11,8 @@ const getTodayDateStringForInit = () => {
   return `${year}-${month}-${day}`;
 };
 
-const INITIAL_TASKS: Task[] = [
+// 默认任务数据（仅在首次初始化 IndexedDB 为空时使用）
+const DEFAULT_TASKS: Task[] = [
   // 今日待办 - 工作类
   {
     id: 'task-1',
@@ -123,6 +124,7 @@ const DB_CONFIG = {
 
 export const TaskProvider = ({ children }: { children: ReactNode }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(true); // 添加加载状态
   const [selectedCategory, setSelectedCategory] = useState<TaskCategoryKey>('all');
   const [selectedPriority, setSelectedPriority] = useState<TaskPriorityKey>('all');
   
@@ -171,16 +173,9 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [dbError?.message]); // 只依赖错误消息字符串
 
-  // 初始化显示初始任务（在 IndexedDB 加载前）
+  // 从 IndexedDB 加载任务（完全依赖数据库，仅首次为空时初始化）
   const hasLoadedRef = useRef(false);
-  
-  useEffect(() => {
-    if (!hasLoadedRef.current && tasks.length === 0) {
-      setTasks(INITIAL_TASKS);
-    }
-  }, []);
 
-  // 从 IndexedDB 加载任务
   useEffect(() => {
     // 只在 ready 变为 true 且还未加载过时执行
     if (!ready || hasLoadedRef.current) return;
@@ -188,9 +183,12 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
     let cancelled = false;
 
     const loadTasks = async () => {
+      setIsLoading(true);
+      
       // 再次检查 ready 状态，防止异步执行时状态变化
       if (!ready) {
-        console.warn('IndexedDB 尚未就绪，跳过加载');
+        console.warn('⚠️ IndexedDB 尚未就绪，跳过加载');
+        setIsLoading(false);
         return;
       }
 
@@ -202,27 +200,36 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
         hasLoadedRef.current = true;
         
         if (storedTasks.length > 0) {
-          // 如果数据库中有任务，使用数据库中的任务
-          console.log(`从 IndexedDB 加载了 ${storedTasks.length} 个任务`);
+          // ✅ 从数据库加载任务数据
+          console.log(`✅ 从 IndexedDB 加载了 ${storedTasks.length} 个任务`);
           setTasks(storedTasks);
         } else {
-          // 如果没有存储的任务，将初始任务保存到 IndexedDB
-          console.log('IndexedDB 为空，初始化默认任务');
-          setTasks(INITIAL_TASKS);
-          for (const task of INITIAL_TASKS) {
+          // 🔧 首次安装：数据库为空，初始化默认任务
+          console.log('🔧 IndexedDB 为空，首次初始化默认任务');
+          setTasks(DEFAULT_TASKS);
+          
+          // 将默认任务保存到数据库
+          for (const task of DEFAULT_TASKS) {
             if (cancelled) return;
             try {
               await putItem(task);
             } catch (err) {
-              console.error('保存任务到 IndexedDB 失败:', err);
+              console.error('❌ 保存默认任务到 IndexedDB 失败:', err);
             }
           }
+          console.log(`✅ 已将 ${DEFAULT_TASKS.length} 个默认任务保存到 IndexedDB`);
         }
       } catch (error) {
         if (cancelled) return;
-        console.error('加载任务失败:', error);
+        console.error('❌ 加载任务失败:', error);
+        // 加载失败时显示空列表，不使用假数据
+        setTasks([]);
+        // 标记为已加载，避免无限重试
         hasLoadedRef.current = true;
-        // 如果加载失败，继续使用初始任务（已在之前设置）
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     };
 
@@ -383,6 +390,24 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
     completedTasks,
     inProgressTasks,
   };
+
+  // 数据加载中时显示加载状态
+  if (isLoading) {
+    return (
+      <TaskContext.Provider value={value}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '100vh',
+          fontSize: '16px',
+          color: '#999'
+        }}>
+          加载中...
+        </div>
+      </TaskContext.Provider>
+    );
+  }
 
   return <TaskContext.Provider value={value}>{children}</TaskContext.Provider>;
 };
