@@ -1,32 +1,38 @@
 .profile-page {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  background-color: #f5f5f5;
+  height: 100vh;
+  background: linear-gradient(180deg, #f6f8fc 0%, #f2f4f8 100%);
+  color: #1f2329;
+  overflow: hidden;
 }
 
 .profile-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 18px 20px 12px;
+  background: #f6f8fc;
 
   &__info {
-    flex: 1;
+    display: flex;
+    flex-direction: column;
+    row-gap: 6px;
   }
 
   &__title {
-    font-size: 24px;
-    font-weight: 600;
+    font-size: 22px;
+    font-weight: 700;
+    color: #1f2329;
   }
 }
 
 .profile-body {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  row-gap: 20px;
+  padding: 0 16px 120px;
   overflow-y: auto;
-  padding-bottom: 80px;
 }
 
