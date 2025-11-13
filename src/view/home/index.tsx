@@ -31,6 +31,7 @@ import {
   type TaskFilterOption,
   TASK_CATEGORY_LABELS,
 } from '../components/task';
+import { ProfileOverview } from '../components/profile';
 import './index.less';
 
 type TabItem = {
@@ -275,6 +276,19 @@ const Home = () => {
     });
   }, [tasks]);
 
+  // 个人中心统计数据
+  const profileStats = useMemo(() => {
+    const completedTasks = tasks.filter((task) => task.completed).length;
+    const inProgressTasks = tasks.filter((task) => !task.completed).length;
+    const completionRate = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
+    return {
+      totalTasks: tasks.length,
+      completedTasks,
+      inProgressTasks,
+      completionRate,
+    };
+  }, [tasks]);
+
   // 根据当前 tab 渲染内容
   const renderContent = () => {
     if (activeTabKey === 'home') {
@@ -327,18 +341,33 @@ const Home = () => {
           <TaskOverdueList tasks={tasks} onGoHandle={() => setActiveTabKey('task')} />
         </div>
       );
+    } else if (activeTabKey === 'profile') {
+      // 个人中心：展示用户信息和统计数据
+      return (
+        <div className="home-body home-body--profile">
+          <ProfileOverview
+            userName="我"
+            slogan="高效管理每一天"
+            totalTasks={profileStats.totalTasks}
+            completedTasks={profileStats.completedTasks}
+            inProgressTasks={profileStats.inProgressTasks}
+            completionRate={profileStats.completionRate}
+            onClearCompleted={() => {
+              setTasks((prev) => prev.filter((task) => !task.completed));
+            }}
+          />
+        </div>
+      );
     } else {
-      // 其他 tab（消息、个人中心）显示占位符
+      // 其他 tab 显示占位符
       return (
         <div className="home-body home-body--placeholder">
           <div className="tab-placeholder">
             <div className="tab-placeholder__icon">
-              {activeTabKey === 'message' ? <MessageOutline /> : <UserOutline />}
+              <MessageOutline />
             </div>
-            <div className="tab-placeholder__title">
-              {activeTabKey === 'message' ? '我的消息' : '个人中心'}
-            </div>
-            <div className="tab-placeholder__desc">功能开发中...</div>
+            <div className="tab-placeholder__title">功能开发中</div>
+            <div className="tab-placeholder__desc">敬请期待...</div>
           </div>
         </div>
       );
@@ -350,23 +379,28 @@ const Home = () => {
       <div className="home-header">
         <div className="home-header__info">
           <div className="home-header__title">
-            {activeTabKey === 'home' ? '今日待办' : activeTabKey === 'task' ? '我的待办' : '首页'}
+            {activeTabKey === 'home' && '今日待办'}
+            {activeTabKey === 'task' && '我的待办'}
+            {activeTabKey === 'message' && '我的消息'}
+            {activeTabKey === 'profile' && '个人中心'}
           </div>
-          <div className="home-header__subtitle">
-            {activeTabKey === 'home' && (
-              <>
-                {today} · 还有 {unfinishedCount} 个任务待完成
-              </>
-            )}
-            {activeTabKey === 'task' && (
-              <>
-                共 {tasks.length} 个任务 · 还有 {unfinishedCount} 个待完成
-              </>
-            )}
-            {activeTabKey === 'message' && (
-              <>已逾期 {overdueTasks.length} 个任务待处理</>
-            )}
-          </div>
+          {activeTabKey !== 'profile' && (
+            <div className="home-header__subtitle">
+              {activeTabKey === 'home' && (
+                <>
+                  {today} · 还有 {unfinishedCount} 个任务待完成
+                </>
+              )}
+              {activeTabKey === 'task' && (
+                <>
+                  共 {tasks.length} 个任务 · 还有 {unfinishedCount} 个待完成
+                </>
+              )}
+              {activeTabKey === 'message' && (
+                <>已逾期 {overdueTasks.length} 个任务待处理</>
+              )}
+            </div>
+          )}
         </div>
         {(activeTabKey === 'home' || activeTabKey === 'task') && (
           <button
