@@ -8,6 +8,7 @@ type TaskListGroupedProps = {
   selectedCategory: TaskCategoryKey;
   onCategoryChange: (category: TaskCategoryKey) => void;
   onToggleComplete: (taskId: string) => void;
+  onEdit?: (task: Task) => void;
   onDelete: (taskId: string) => void;
 };
 
@@ -78,6 +79,7 @@ const TaskListGrouped = ({
   selectedCategory,
   onCategoryChange,
   onToggleComplete,
+  onEdit,
   onDelete,
 }: TaskListGroupedProps) => {
   // 根据分类过滤任务
@@ -118,6 +120,7 @@ const TaskListGrouped = ({
                     key={task.id}
                     task={task}
                     onToggleComplete={onToggleComplete}
+                    onEdit={onEdit}
                     onDelete={onDelete}
                   />
                 ))}

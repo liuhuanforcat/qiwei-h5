@@ -9,6 +9,7 @@ import {
   type TaskCategoryTab,
   type TaskFilterOption,
   TASK_CATEGORY_LABELS,
+  type Task,
 } from '@/components/task';
 import './index.less';
 
@@ -50,11 +51,41 @@ const getTodayDateString = () => {
   return `${year}-${month}-${day}`;
 };
 
+// 将日期字符串（YYYY-MM-DD）转换为 Date 对象
+const parseDateString = (dateString?: string): Date | undefined => {
+  if (!dateString) return undefined;
+  
+  // 手动解析 YYYY-MM-DD 格式，避免时区问题
+  const parts = dateString.split('-');
+  if (parts.length !== 3) return undefined;
+  
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1; // 月份从 0 开始
+  const day = parseInt(parts[2], 10);
+  
+  // 检查日期是否有效
+  if (isNaN(year) || isNaN(month) || isNaN(day)) return undefined;
+  
+  const date = new Date(year, month, day);
+  
+  // 验证日期是否有效（防止无效日期如 2025-02-30）
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month ||
+    date.getDate() !== day
+  ) {
+    return undefined;
+  }
+  
+  return date;
+};
+
 const HomePage = () => {
   const [showTaskPopup, setShowTaskPopup] = useState(false);
   const [form] = Form.useForm();
   const [deadlinePickerVisible, setDeadlinePickerVisible] = useState(false);
   const [filterVisible, setFilterVisible] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   
   const {
     tasks,
@@ -65,6 +96,7 @@ const HomePage = () => {
     toggleTaskComplete,
     deleteTask,
     addTask,
+    updateTask,
   } = useTaskContext();
 
   const today = useMemo(() => {
@@ -105,30 +137,69 @@ const HomePage = () => {
     return todayTasks.filter((task) => !task.completed).length;
   }, [todayTasks]);
 
-  const handleSubmit = async () => {
-    const values = form.getFieldsValue();
-    
-    // 如果用户没有选择日期，默认使用今天的日期
-    const dueDate = values.deadline 
-      ? formatDateForStorage(values.deadline) 
-      : getTodayDateString(); // 默认今天
-    
-    // 调用 addTask，即使 IndexedDB 未就绪，任务也会添加到本地状态
-    await addTask({
-      title: values.title,
-      description: values.description ?? '',
-      category: (values.category?.[0] ?? 'work') as any,
-      priority: (values.priority?.[0] ?? 'medium') as any,
-      dueDate: dueDate, // 确保总是有日期
-      completed: false, // 确保默认为未完成
+  // 处理编辑任务
+  const handleEdit = (task: Task) => {
+    // 将任务数据填充到表单
+    form.setFieldsValue({
+      title: task.title,
+      description: task.description || '',
+      category: [task.category],
+      priority: [task.priority],
+      deadline: parseDateString(task.dueDate) || new Date(),
     });
+    
+    // 设置编辑模式
+    setEditingTaskId(task.id);
+    // 打开弹窗
+    setShowTaskPopup(true);
+  };
 
-    setShowTaskPopup(false);
-    form.resetFields();
+  const handleSubmit = async () => {
+    try {
+      // 验证表单
+      const values = await form.validateFields();
+
+      console.log('values', values);
+      
+      
+      // 如果用户没有选择日期，默认使用今天的日期
+      const dueDate = values.deadline 
+        ? formatDateForStorage(values.deadline) 
+        : getTodayDateString(); // 默认今天
+      
+      if (editingTaskId) {
+        // 编辑模式：更新任务
+        await updateTask(editingTaskId, {
+          title: values.title,
+          description: values.description ?? '',
+          category: (values.category?.[0] ?? 'work') as any,
+          priority: (values.priority?.[0] ?? 'medium') as any,
+          dueDate: dueDate,
+        });
+      } else {
+        // 新建模式：添加任务
+        await addTask({
+          title: values.title,
+          description: values.description ?? '',
+          category: (values.category?.[0] ?? 'work') as any,
+          priority: (values.priority?.[0] ?? 'medium') as any,
+          dueDate: dueDate, // 确保总是有日期
+          completed: false, // 确保默认为未完成
+        });
+      }
+
+      setShowTaskPopup(false);
+      setEditingTaskId(null);
+      form.resetFields();
+    } catch (error) {
+      // 表单验证失败，不执行提交
+      console.log('表单验证失败:', error);
+    }
   };
 
   const handleCancel = () => {
     setShowTaskPopup(false);
+    setEditingTaskId(null);
     form.resetFields();
     // 清除日期字段（重置时不保留日期）
     form.setFieldValue('deadline', undefined);
@@ -171,6 +242,7 @@ const HomePage = () => {
                 key={task.id}
                 task={task}
                 onToggleComplete={toggleTaskComplete}
+                onEdit={handleEdit}
                 onDelete={deleteTask}
               />
             ))
@@ -197,6 +269,7 @@ const HomePage = () => {
         className="fab-button" 
         onClick={() => {
           // 打开弹窗时，重置表单并设置默认日期为今天
+          setEditingTaskId(null);
           form.resetFields();
           form.setFieldValue('deadline', new Date());
           setShowTaskPopup(true);
@@ -207,7 +280,7 @@ const HomePage = () => {
 
       <Popup
         visible={showTaskPopup}
-        onMaskClick={() => setShowTaskPopup(false)}
+        onMaskClick={handleCancel}
         position="bottom"
         bodyStyle={{
           borderTopLeftRadius: '16px',
@@ -217,8 +290,8 @@ const HomePage = () => {
       >
         <div className="task-popup">
           <div className="task-popup-header">
-            <h2>新建任务</h2>
-            <div className="close-btn" onClick={() => setShowTaskPopup(false)}>
+            <h2>{editingTaskId ? '编辑任务' : '新建任务'}</h2>
+            <div className="close-btn" onClick={handleCancel}>
               ✕
             </div>
           </div>
@@ -273,35 +346,37 @@ const HomePage = () => {
               />
             </Form.Item>
 
-            <Form.Item shouldUpdate label="截止日期" className="date-field">
-              {() => {
-                const value = form.getFieldValue('deadline') as Date | null | undefined;
-                const isPlaceholder = !value;
-                return (
-                  <>
-                    <div
-                      className="date-trigger"
-                      onClick={() => setDeadlinePickerVisible(true)}
-                    >
-                      <span className={`date-text${isPlaceholder ? ' placeholder' : ''}`}>
-                        {formatPickerDisplay(value)}
-                      </span>
-                      <CalendarOutline className="date-icon" />
-                    </div>
-                    <DatePicker
-                      precision="day"
-                      visible={deadlinePickerVisible}
-                      onClose={() => setDeadlinePickerVisible(false)}
-                      onCancel={() => setDeadlinePickerVisible(false)}
-                      onConfirm={(val) => {
-                        form.setFieldValue('deadline', val);
-                        setDeadlinePickerVisible(false);
-                      }}
-                      value={value ?? null}
-                    />
-                  </>
-                );
-              }}
+            <Form.Item name="deadline" label="截止日期" className="date-field">
+              <Form.Item noStyle shouldUpdate>
+                {() => {
+                  const value = form.getFieldValue('deadline') as Date | null | undefined;
+                  const isPlaceholder = !value;
+                  return (
+                    <>
+                      <div
+                        className="date-trigger"
+                        onClick={() => setDeadlinePickerVisible(true)}
+                      >
+                        <span className={`date-text${isPlaceholder ? ' placeholder' : ''}`}>
+                          {formatPickerDisplay(value)}
+                        </span>
+                        <CalendarOutline className="date-icon" />
+                      </div>
+                      <DatePicker
+                        precision="day"
+                        visible={deadlinePickerVisible}
+                        onClose={() => setDeadlinePickerVisible(false)}
+                        onCancel={() => setDeadlinePickerVisible(false)}
+                        onConfirm={(val) => {
+                          form.setFieldValue('deadline', val);
+                          setDeadlinePickerVisible(false);
+                        }}
+                        value={value ?? null}
+                      />
+                    </>
+                  );
+                }}
+              </Form.Item>
             </Form.Item>
           </Form>
 
