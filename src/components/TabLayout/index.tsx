@@ -1,4 +1,4 @@
-import { TabBar } from 'antd-mobile'
+import { TabBar  } from 'antd-mobile'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import {
   AppOutline,
@@ -7,6 +7,8 @@ import {
   UserOutline,
 } from 'antd-mobile-icons'
 import './index.less'
+import { useMount } from 'ahooks'
+import Cookies from 'js-cookie'
 
 const tabs = [
   {
@@ -39,6 +41,17 @@ export default function TabLayout() {
   const setRouteActive = (value: string) => {
     navigate(value)
   }
+
+  useMount(() => {
+    const token = Cookies.get('token')
+    if (!token) {
+      // Toast.show({
+      //   icon: 'fail',
+      //   content: '登录已过期，请重新登录',
+      // })
+      navigate('/login')
+    }
+  })
 
   return (
     <div className="tab-layout">
