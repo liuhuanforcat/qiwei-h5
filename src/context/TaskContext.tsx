@@ -3,13 +3,13 @@ import type { Task, TaskCategoryKey, TaskPriorityKey } from '@/components/task';
 import { useIndexedDB } from '@/hooks/useIndexedDB';
 
 // 获取今日日期字符串用于初始化任务
-const getTodayDateStringForInit = () => {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, '0');
-  const day = `${date.getDate()}`.padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
+// const getTodayDateStringForInit = () => {
+//   const date = new Date();
+//   const year = date.getFullYear();
+//   const month = `${date.getMonth() + 1}`.padStart(2, '0');
+//   const day = `${date.getDate()}`.padStart(2, '0');
+//   return `${year}-${month}-${day}`;
+// };
 
 // 默认任务数据（仅在首次初始化 IndexedDB 为空时使用）
 const DEFAULT_TASKS: Task[] = [
