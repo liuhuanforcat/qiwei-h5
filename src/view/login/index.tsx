@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input, Button, Form, Toast } from "antd-mobile";
 import {
@@ -14,6 +14,15 @@ const Login = () => {
   const [form] = Form.useForm();
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  //免登录
+  useEffect(() => {
+    Cookies.set("token", "12kkksd3d4f56e78f9f0",{
+      expires: 1
+    });
+    // 登录成功后跳转
+    navigate("/home");
+  }, []);
 
   const handleLogin = async () => {
     try {
