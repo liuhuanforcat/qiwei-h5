@@ -1,11 +1,19 @@
 import { useRoutes, Navigate } from 'react-router-dom'
-import Login from '../view/login'
+import { lazy, Suspense } from 'react'
 import TabLayout from '../components/TabLayout'
-import Home from '../view/home'
-import Todo from '../view/todo'
-import Message from '../view/message'
-import Profile from '../view/profile'
-import NotFound from '../view/404'
+
+// 懒加载路由组件
+const Login = lazy(() => import('../view/login'))
+const Home = lazy(() => import('../view/home'))
+const Todo = lazy(() => import('../view/todo'))
+const Message = lazy(() => import('../view/message'))
+const Profile = lazy(() => import('../view/profile'))
+// const NotFound = lazy(() => import('../view/404'))
+
+// 加载中的占位组件
+const Loading = () => (
+  <div style={{ padding: '20px', textAlign: 'center' }}>加载中...</div>
+)
 
 export default function Router() {
   const routes = useRoutes([
@@ -19,30 +27,54 @@ export default function Router() {
         },
         {
           path: 'home',
-          element: <Home />,
+          element: (
+            <Suspense fallback={<Loading />}>
+              <Home />
+            </Suspense>
+          ),
         },
         {
           path: 'todo',
-          element: <Todo />,
+          element: (
+            <Suspense fallback={<Loading />}>
+              <Todo />
+            </Suspense>
+          ),
         },
         {
           path: 'message',
-          element: <Message />,
+          element: (
+            <Suspense fallback={<Loading />}>
+              <Message />
+            </Suspense>
+          ),
         },
         {
           path: 'profile',
-          element: <Profile />,
+          element: (
+            <Suspense fallback={<Loading />}>
+              <Profile />
+            </Suspense>
+          ),
         },
       ],
     },
     {
       path: '/login',
-      element: <Login />,
+      element: (
+        <Suspense fallback={<Loading />}>
+          <Login />
+        </Suspense>
+      ),
     },
-    {
-      path: '*',
-      element: <NotFound />,
-    },
+    // {
+    //   path: '*',
+    //   element: (
+    //     <Suspense fallback={<Loading />}>
+    //       <NotFound />
+    //     </Suspense>
+    //   ),
+    // },
   ])
 
   return routes
