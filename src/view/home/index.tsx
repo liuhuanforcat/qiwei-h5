@@ -209,7 +209,7 @@ const HomePage = () => {
     <div className="home-page">
       <div className="home-header">
         <div className="home-header__info">
-          <div className="home-header__title">今日待办1</div>
+          <div className="home-header__title">今日待办</div>
           <div className="home-header__subtitle">
             {today} · 还有 {unfinishedCount} 个任务待完成
           </div>
